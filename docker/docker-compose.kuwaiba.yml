@@ -1,0 +1,22 @@
+# Docker Compose for Kuwaiba 2.1 (target inventory system)
+# Usage: docker compose -f scripts/docker-compose.kuwaiba.yml up -d
+#
+# Default credentials: admin / kuwaiba
+# SOAP WSDL: http://localhost:8881/kuwaiba/KuwaibaService?wsdl
+# Web UI:    http://localhost:8880
+# Note: SOAP WS runs on a separate internal port (ws.port=8081 in application.properties)
+# Mapped to 8880/8881 to avoid clashes when running alongside NetBox (8000).
+
+services:
+  kuwaiba:
+    image: neotropic/kuwaiba:v2.1.1
+    container_name: kuwaiba
+    ports:
+      - "8880:8080"
+      - "8881:8081"
+    volumes:
+      - kuwaiba-data:/data
+    restart: unless-stopped
+
+volumes:
+  kuwaiba-data:

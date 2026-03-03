@@ -1,0 +1,113 @@
+# Docker Compose for NetBox (target inventory system)
+# Usage: docker compose -f docker/docker-compose.netbox.yml up -d
+#
+# Default credentials: admin / admin
+# REST API:  http://localhost:8000/api/
+# Web UI:    http://localhost:8000
+# API Token: set NETBOX_API_TOKEN below or create one via the UI
+#
+# First startup takes ~60 seconds while migrations run and the
+# superuser is created.
+#
+# Includes netbox-topology-views plugin for network visualization.
+# Topology view: Plugins → Topology Views in the NetBox menu.
+
+x-netbox-env: &netbox-env
+  SUPERUSER_NAME: admin
+  SUPERUSER_PASSWORD: admin
+  SUPERUSER_EMAIL: admin@example.com
+  SUPERUSER_API_TOKEN: "0123456789abcdef0123456789abcdef01234567"  # REVIEW: Replace with a real token for production
+  ALLOWED_HOSTS: "*"
+  DB_HOST: postgres
+  DB_PORT: "5432"
+  DB_NAME: netbox
+  DB_USER: netbox
+  DB_PASSWORD: netbox  # REVIEW: Change for production
+  REDIS_HOST: redis
+  REDIS_PORT: "6379"
+  REDIS_PASSWORD: ""
+  REDIS_CACHE_HOST: redis-cache
+  REDIS_CACHE_PORT: "6379"
+  REDIS_CACHE_PASSWORD: ""
+  SECRET_KEY: "e837647b02f618f72f7d95ab7914388ada247ec88f6911e2b0aca8344d48e3ad"  # REVIEW: Generate a proper secret for production
+
+services:
+  netbox:
+    build:
+      context: ./netbox-custom
+      dockerfile: Dockerfile
+    container_name: netbox
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      redis-cache:
+        condition: service_started
+    ports:
+      - "8000:8080"
+    environment:
+      <<: *netbox-env
+    volumes:
+      - netbox-media:/opt/netbox/netbox/media
+      - netbox-reports:/opt/netbox/netbox/reports
+      - netbox-scripts:/opt/netbox/netbox/scripts
+    restart: unless-stopped
+
+  netbox-worker:
+    build:
+      context: ./netbox-custom
+      dockerfile: Dockerfile
+    container_name: netbox-worker
+    depends_on:
+      netbox:
+        condition: service_started
+    command: /opt/netbox/venv/bin/python /opt/netbox/netbox/manage.py rqworker
+    environment:
+      <<: *netbox-env
+    restart: unless-stopped
+
+  netbox-housekeeping:
+    build:
+      context: ./netbox-custom
+      dockerfile: Dockerfile
+    container_name: netbox-housekeeping
+    depends_on:
+      netbox:
+        condition: service_started
+    command: /opt/netbox/housekeeping.sh
+    environment:
+      <<: *netbox-env
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: netbox-postgres
+    environment:
+      POSTGRES_DB: netbox
+      POSTGRES_USER: netbox
+      POSTGRES_PASSWORD: netbox  # REVIEW: Match DB_PASSWORD above
+    volumes:
+      - netbox-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U netbox"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: netbox-redis
+    restart: unless-stopped
+
+  redis-cache:
+    image: redis:7-alpine
+    container_name: netbox-redis-cache
+    restart: unless-stopped
+
+volumes:
+  netbox-postgres-data:
+  netbox-media:
+  netbox-reports:
+  netbox-scripts:

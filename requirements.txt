@@ -1,0 +1,4 @@
+requests>=2.28
+pyyaml>=6.0
+zeep>=4.2
+playwright>=1.40  # optional, for walkthroughs only
