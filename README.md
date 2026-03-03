@@ -6,10 +6,10 @@ One-command demo of a GPON access network inventory loaded into **NetBox** (REST
 
 ```
 ┌─────────────┐     CSV      ┌──────────────┐     REST/SOAP     ┌─────────────────┐
-│  generate/  │ ──────────►  │    load/      │ ───────────────►  │  NetBox / Kuwaiba│
-│  Synthetic  │   sites,     │  Adapter      │   create objects  │  (Docker)        │
-│  Data Gen   │   OLTs,      │  Pattern      │   via native API  │                  │
-│             │   ONTs...    │               │                   │                  │
+│  generate/  │ ──────────►  │    load/     │ ───────────────►  │ NetBox / Kuwaiba│
+│  Synthetic  │   sites,     │  Adapter     │   create objects  │ (Docker)        │
+│  Data Gen   │   OLTs,      │  Pattern     │   via native API  │                 │
+│             │   ONTs...    │              │                   │                 │
 └─────────────┘              └──────────────┘                   └─────────────────┘
        ▲                                                                ▲
        │                                                                │
